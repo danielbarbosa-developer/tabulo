@@ -65,14 +65,14 @@ public class CsvSourceGenerator : IIncrementalGenerator
         {
             return attr.ConstructorArguments[0].Value as string;
         }
-        return property.Name; // fallback to property name
+        return property.Name;
     }
 
-    private static string GenerateParser(string namespaceName, string className, List<CsvProperty> props)
-    {
-        var sb = new StringBuilder();
-
-        sb.AppendLine($@"
+   private static string GenerateParser(string namespaceName, string className, List<CsvProperty> props)
+{
+    var sb = new StringBuilder();
+    
+    sb.AppendLine($@"
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -82,47 +82,62 @@ namespace {namespaceName}
 {{
     public partial class {className} : ICsvParser<{className}>
     {{
-        private readonly Dictionary<string, int> _columnMap = new();
+");
+    
+    foreach (var p in props)
+    {
+        sb.AppendLine($"        private int _idx_{p.Name};");
+    }
 
-        public void SetColumnMap(Dictionary<string, int> map)
-        {{
-            _columnMap.Clear();
-            foreach (var kvp in map) _columnMap[kvp.Key] = kvp.Value;
-        }}
-
+    sb.AppendLine($@"
         public {className} ParseLine(ReadOnlySpan<char> line)
         {{
-            var parts = line.ToString().Split(',');
+            Span<Range> ranges = stackalloc Range[{props.Count + 4}];
+            int count = Split(line, ranges);
 
             return new {className}
             {{");
 
-        for (int i = 0; i < props.Count; i++)
+    foreach (var p in props)
+    {
+        string parse = p.Type switch
         {
-            var p = props[i];
-            string parse = p.Type switch
-            {
-                "int" => $"int.Parse(parts[_columnMap[\"{p.ColumnName}\"]])",
-                "decimal" => $"decimal.Parse(parts[_columnMap[\"{p.ColumnName}\"]], System.Globalization.CultureInfo.InvariantCulture)",
-                _ => $"parts[_columnMap[\"{p.ColumnName}\"]]"
+            "int" => $"ParseInt(line[ranges[_idx_{p.Name}]])",
+            "decimal" => $"ParseDecimal(line[ranges[_idx_{p.Name}]])",
+            _ => $"line[ranges[_idx_{p.Name}]].ToString()"
+        };
+
+        sb.AppendLine($"                {p.Name} = {parse},");
+    }
+
+    sb.AppendLine(@"
             };
+        }");
 
-            sb.AppendLine($"                {p.Name} = {parse},");
-        }
+    sb.AppendLine($@"
+        public IEnumerable<{className}> ParseStream(TextReader reader)
+        {{
+            var header = reader.ReadLine();
+            if (header == null) yield break;
 
-        sb.AppendLine(@"
-            };
-        }
+            var span = header.AsSpan();
+            Span<Range> ranges = stackalloc Range[{props.Count + 4}];
+            int count = Split(span, ranges);
 
-        public IEnumerable<" + className + @"> ParseStream(TextReader reader)
-        {
-            string? headerLine = reader.ReadLine();
-            if (headerLine == null) yield break;
+            for (int i = 0; i < count; i++)
+            {{
+                var col = span[ranges[i]].Trim();
 
-            var headers = headerLine.Split(',');
-            for (int i = 0; i < headers.Length; i++)
-            {
-                _columnMap[headers[i].Trim()] = i;
+");
+
+    foreach (var p in props)
+    {
+        sb.AppendLine($@"
+                if (col.SequenceEqual(""{p.ColumnName}"".AsSpan()))
+                    _idx_{p.Name} = i;");
+    }
+
+    sb.AppendLine(@"
             }
 
             string? line;
@@ -130,10 +145,100 @@ namespace {namespaceName}
             {
                 yield return ParseLine(line.AsSpan());
             }
-        }
+        }");
+
+    sb.AppendLine(@"
+        private static int Split(ReadOnlySpan<char> line, Span<Range> ranges)
+        {
+            int count = 0;
+            int start = 0;
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                if (line[i] == ',')
+                {
+                    ranges[count++] = start..i;
+                    start = i + 1;
+                }
+            }
+
+            ranges[count++] = start..line.Length;
+            return count;
+        }");
+
+    sb.AppendLine(@"
+        private static int ParseInt(ReadOnlySpan<char> span)
+        {
+            int value = 0;
+            bool negative = false;
+            int i = 0;
+
+            if (span.Length > 0 && span[0] == '-')
+            {
+                negative = true;
+                i = 1;
+            }
+
+            for (; i < span.Length; i++)
+            {
+                value = value * 10 + (span[i] - '0');
+            }
+
+            return negative ? -value : value;
+        }");
+
+    sb.AppendLine(@"
+        private static decimal ParseDecimal(ReadOnlySpan<char> span)
+        {
+            long integer = 0;
+            long fraction = 0;
+            long divisor = 1;
+            bool negative = false;
+            bool hasFraction = false;
+
+            int i = 0;
+
+            if (span.Length > 0 && span[0] == '-')
+            {
+                negative = true;
+                i = 1;
+            }
+
+            for (; i < span.Length; i++)
+            {
+                var c = span[i];
+
+                if (c == '.')
+                {
+                    hasFraction = true;
+                    continue;
+                }
+
+                int digit = c - '0';
+
+                if (!hasFraction)
+                {
+                    integer = integer * 10 + digit;
+                }
+                else
+                {
+                    fraction = fraction * 10 + digit;
+                    divisor *= 10;
+                }
+            }
+
+            decimal result = integer;
+
+            if (hasFraction)
+                result += (decimal)fraction / divisor;
+
+            return negative ? -result : result;
+        }");
+
+    sb.AppendLine(@"
     }
 }");
 
-        return sb.ToString();
-    }
+    return sb.ToString();
+}
 }
