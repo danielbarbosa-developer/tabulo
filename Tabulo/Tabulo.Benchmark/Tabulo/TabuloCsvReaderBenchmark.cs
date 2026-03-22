@@ -31,7 +31,7 @@ public class TabuloCsvReaderBenchmark
     }
 
     [Benchmark]
-    public void ParseWithCustomParser()
+    public void ParseWithTabulo()
     {
         textReader.BaseStream.Seek(0, SeekOrigin.Begin);
         textReader.DiscardBufferedData();
