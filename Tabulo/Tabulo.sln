@@ -8,6 +8,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabulo.UnitTests", "Tabulo.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabulo.Generator", "Tabulo.Generator\Tabulo.Generator.csproj", "{20DFDDA9-BA58-47EA-9DA6-88517EC258EF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmarks", "Benchmarks", "{232F65D5-6DA5-41D1-8A43-CA69B3EFE69B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabulo.Benchmark", "Tabulo.Benchmark\Tabulo.Benchmark.csproj", "{507D0CC9-ABF1-4F8B-9085-B73B7E6772E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tabulo.Benchmark.Common", "Tabulo.Benchmark.Common\Tabulo.Benchmark.Common.csproj", "{321A6D18-8883-40E4-B4FA-BE07DE8425D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,8 +32,18 @@ Global
 		{20DFDDA9-BA58-47EA-9DA6-88517EC258EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20DFDDA9-BA58-47EA-9DA6-88517EC258EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20DFDDA9-BA58-47EA-9DA6-88517EC258EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{507D0CC9-ABF1-4F8B-9085-B73B7E6772E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{507D0CC9-ABF1-4F8B-9085-B73B7E6772E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{507D0CC9-ABF1-4F8B-9085-B73B7E6772E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{507D0CC9-ABF1-4F8B-9085-B73B7E6772E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{321A6D18-8883-40E4-B4FA-BE07DE8425D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{321A6D18-8883-40E4-B4FA-BE07DE8425D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{321A6D18-8883-40E4-B4FA-BE07DE8425D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{321A6D18-8883-40E4-B4FA-BE07DE8425D1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7A47B5F0-D6AB-4CC6-914A-486CE817ED53} = {5B3B595A-BC41-4A8C-B96E-80A5B1B5CCB0}
+		{507D0CC9-ABF1-4F8B-9085-B73B7E6772E2} = {232F65D5-6DA5-41D1-8A43-CA69B3EFE69B}
+		{321A6D18-8883-40E4-B4FA-BE07DE8425D1} = {232F65D5-6DA5-41D1-8A43-CA69B3EFE69B}
 	EndGlobalSection
 EndGlobal
