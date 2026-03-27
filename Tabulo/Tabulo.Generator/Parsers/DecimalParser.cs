@@ -4,54 +4,61 @@ public static class DecimalParser
 {
     public static string GenerateParserCode()
     {
-       return """
+        return """
+                   private static bool TryParseDecimal(ReadOnlySpan<char> span, out decimal value)
+                   {
+                       value = 0;
+                       if (span.Length == 0)
+                           return false;
 
-                      private static decimal ParseDecimal(ReadOnlySpan<char> span)
-                      {
-                          long integer = 0;
-                          long fraction = 0;
-                          long divisor = 1;
-                          bool negative = false;
-                          bool hasFraction = false;
+                       bool negative = false;
+                       bool hasFraction = false;
+                       long integer = 0;
+                       long fraction = 0;
+                       long divisor = 1;
 
-                          int i = 0;
+                       int i = 0;
+                       if (span[0] == '-')
+                       {
+                           negative = true;
+                           i = 1;
+                           if (span.Length == 1)
+                               return false;
+                       }
 
-                          if (span.Length > 0 && span[0] == '-')
-                          {
-                              negative = true;
-                              i = 1;
-                          }
+                       for (; i < span.Length; i++)
+                       {
+                           char c = span[i];
 
-                          for (; i < span.Length; i++)
-                          {
-                              var c = span[i];
+                           if (c == '.')
+                           {
+                               if (hasFraction)
+                                   return false;
+                               hasFraction = true;
+                               continue;
+                           }
 
-                              if (c == '.')
-                              {
-                                  hasFraction = true;
-                                  continue;
-                              }
+                           if (c < '0' || c > '9')
+                               return false;
 
-                              int digit = c - '0';
+                           int digit = c - '0';
 
-                              if (!hasFraction)
-                              {
-                                  integer = integer * 10 + digit;
-                              }
-                              else
-                              {
-                                  fraction = fraction * 10 + digit;
-                                  divisor *= 10;
-                              }
-                          }
+                           if (!hasFraction)
+                               integer = integer * 10 + digit;
+                           else
+                           {
+                               fraction = fraction * 10 + digit;
+                               divisor *= 10;
+                           }
+                       }
 
-                          decimal result = integer;
+                       decimal result = integer;
+                       if (hasFraction)
+                           result += (decimal)fraction / divisor;
 
-                          if (hasFraction)
-                              result += (decimal)fraction / divisor;
-
-                          return negative ? -result : result;
-                      }
-              """;
+                       value = negative ? -result : result;
+                       return true;
+                   }
+               """;
     }
 }

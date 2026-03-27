@@ -93,36 +93,63 @@ namespace {namespaceName}
     }
 
     sb.AppendLine($@"
-        public {className} ParseLine(ReadOnlySpan<char> line)
+        public bool TryParseLine(ReadOnlySpan<char> line, out {className} result)
         {{
             Span<Range> ranges = stackalloc Range[{props.Count + 4}];
             int count = Split(line, ranges);
 
-            return new {className}
-            {{");
+            result = new {className}();
+");
 
     foreach (var p in props)
     {
-        string parse = p.Type switch
+        string spanAccess = $"line[ranges[_idx_{p.Name}]]";
+
+        string code = p.Type switch
         {
-            "int" => $"ParseInt(line[ranges[_idx_{p.Name}]])",
-            "long" => $"ParseLong(line[ranges[_idx_{p.Name}]])",
-            "decimal" => $"ParseDecimal(line[ranges[_idx_{p.Name}]])",
-            "double" => $"ParseDouble(line[ranges[_idx_{p.Name}]])",
-            "DateTime" or "System.DateTime" => $"ParseDateTime(line[ranges[_idx_{p.Name}]])",
-            "bool" => $"ParseBool(line[ranges[_idx_{p.Name}]])",
-            _ => $"line[ranges[_idx_{p.Name}]].ToString()"
+            "int" => $@"
+            if (!TryParseInt({spanAccess}, out var __{p.Name}))
+                return false;
+            result.{p.Name} = __{p.Name};",
+
+            "long" => $@"
+            if (!TryParseLong({spanAccess}, out var __{p.Name}))
+                return false;
+            result.{p.Name} = __{p.Name};",
+
+            "decimal" => $@"
+            if (!TryParseDecimal({spanAccess}, out var __{p.Name}))
+                return false;
+            result.{p.Name} = __{p.Name};",
+
+            "double" => $@"
+            if (!TryParseDouble({spanAccess}, out var __{p.Name}))
+                return false;
+            result.{p.Name} = __{p.Name};",
+
+            "DateTime" or "System.DateTime" => $@"
+            if (!TryParseDateTime({spanAccess}, out var __{p.Name}))
+                return false;
+            result.{p.Name} = __{p.Name};",
+
+            "bool" => $@"
+            if (!TryParseBool({spanAccess}, out var __{p.Name}))
+                return false;
+            result.{p.Name} = __{p.Name};",
+
+            _ => $@"
+            result.{p.Name} = {spanAccess}.ToString();"
         };
 
-        sb.AppendLine($"                {p.Name} = {parse},");
+        sb.AppendLine(code);
     }
 
     sb.AppendLine(@"
-            };
+            return true;
         }");
 
     sb.AppendLine($@"
-        public IEnumerable<{className}> ParseStream(TextReader reader)
+        public IEnumerable<{className}> ParseStream(TextReader reader, bool skipInvalid = true, Action<string>? onError = null)
         {{
             var header = reader.ReadLine();
             if (header == null) yield break;
@@ -150,7 +177,19 @@ namespace {namespaceName}
             string? line;
             while ((line = reader.ReadLine()) != null)
             {
-                yield return ParseLine(line.AsSpan());
+                var lineSpan = line.AsSpan();
+                if (TryParseLine(lineSpan, out var item))
+                {
+                    yield return item;
+                }
+                else
+                {
+                    // Error handling
+                    onError?.Invoke(line);
+                    if (!skipInvalid)
+                        throw new FormatException($""Invalid CSV line: '{line}'"");
+                    // else skip line
+                }
             }
         }");
 

@@ -68,5 +68,7 @@ public class CsvReaderShould
         Assert.True(third.IsCredit); // "1"
         Assert.Equal(new DateTime(2025, 3, 10), third.TransactionDate);
     }
+    
+    
 
 }

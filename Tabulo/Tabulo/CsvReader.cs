@@ -12,8 +12,8 @@ public class CsvReader<T> where T : ICsvParser<T>, new()
         _reader = reader;
     }
 
-    public IEnumerable<T> ReadAll()
-        => CsvParser<T>.Instance.ParseStream(_reader);
+    public IEnumerable<T> ReadAll(bool skipInvalid = true, Action<string>? onError = null )
+        => CsvParser<T>.Instance.ParseStream(_reader, skipInvalid, onError);
 
     public List<T> ReadToList()
         => new List<T>(ReadAll());
