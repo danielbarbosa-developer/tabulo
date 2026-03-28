@@ -1,3 +1,6 @@
+using System.Text;
+using AwesomeAssertions;
+
 namespace Tabulo.UnitTests;
 
 public class CsvReaderShould
@@ -22,12 +25,15 @@ public class CsvReaderShould
 
         var list = csv.ReadAll().ToList();
 
-        Assert.Equal(3, list.Count);
-        Assert.Equal("Notebook", list[0].Name);
-        Assert.Equal("Mouse", list[1].Name);
-        Assert.Equal("Keyboard", list[2].Name);
+        AssertSampleCsv(list);
     }
-    
+
+    private static void AssertSampleCsv(List<ProductDto> list)
+    {
+        list.Should().HaveCount(3);
+        list.Select(x => x.Name).Should().ContainInOrder("Notebook", "Mouse", "Keyboard");
+    }
+
     [Fact]
     public void ReadAll_ShouldParseFinancialTransactionsCorrectly()
     {
@@ -36,39 +42,66 @@ public class CsvReaderShould
 
         var list = csv.ReadAll().ToList();
 
-        Assert.Equal(3, list.Count);
-
-        var first = list[0];
-
-        Assert.Equal(1, first.Id);
-        Assert.Equal(50001, first.AccountId);
-        Assert.Equal("Salary", first.Description);
-        Assert.Equal(5000.00m, first.Amount);
-        Assert.Equal(0.0, first.FeeRate);
-        Assert.True(first.IsCredit);
-        Assert.Equal(new DateTime(2025, 3, 1), first.TransactionDate);
-
-        var second = list[1];
-
-        Assert.Equal(2, second.Id);
-        Assert.Equal(50001, second.AccountId);
-        Assert.Equal("Netflix Subscription", second.Description);
-        Assert.Equal(-39.90m, second.Amount);
-        Assert.Equal(0.02, second.FeeRate);
-        Assert.False(second.IsCredit);
-        Assert.Equal(new DateTime(2025, 3, 5), second.TransactionDate);
-
-        var third = list[2];
-
-        Assert.Equal(3, third.Id);
-        Assert.Equal(50002, third.AccountId);
-        Assert.Equal("Freelance Project", third.Description);
-        Assert.Equal(1200.50m, third.Amount);
-        Assert.Equal(0.015, third.FeeRate);
-        Assert.True(third.IsCredit); // "1"
-        Assert.Equal(new DateTime(2025, 3, 10), third.TransactionDate);
+        AssertFinancialCsv(list);
     }
     
-    
+    [Fact]
+    public void ReadAllAsStream_ShouldStreamAllLines()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(SampleCsv));
+        var csv = new CsvReader<ProductDto>(stream);
 
+        var list = csv.ReadAsStream().ToList();
+
+        AssertSampleCsv(list);
+    }
+    
+    [Fact]
+    public void ReadAllAsStream_ShouldParseFinancialTransactionsCorrectly()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(FinancialCsv));
+        var csv = new CsvReader<FinancialTransactionDto>(stream);
+
+        var list = csv.ReadAsStream().ToList();
+
+        AssertFinancialCsv(list);
+    }
+
+    private static void AssertFinancialCsv(List<FinancialTransactionDto> list)
+    {
+        list.Should().HaveCount(3);
+
+        list[0].Should().BeEquivalentTo(new
+        {
+            Id = 1,
+            AccountId = 50001,
+            Description = "Salary",
+            Amount = 5000.00m,
+            FeeRate = 0.0,
+            IsCredit = true,
+            TransactionDate = new DateTime(2025, 3, 1)
+        });
+
+        list[1].Should().BeEquivalentTo(new
+        {
+            Id = 2,
+            AccountId = 50001,
+            Description = "Netflix Subscription",
+            Amount = -39.90m,
+            FeeRate = 0.02,
+            IsCredit = false,
+            TransactionDate = new DateTime(2025, 3, 5)
+        });
+
+        list[2].Should().BeEquivalentTo(new
+        {
+            Id = 3,
+            AccountId = 50002,
+            Description = "Freelance Project",
+            Amount = 1200.50m,
+            FeeRate = 0.015,
+            IsCredit = true,
+            TransactionDate = new DateTime(2025, 3, 10)
+        });
+    }
 }
