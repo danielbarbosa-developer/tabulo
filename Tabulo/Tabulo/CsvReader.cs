@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Tabulo;
@@ -32,6 +33,14 @@ public class CsvReader<T> where T : ICsvParser<T>, new()
         using var reader = new StreamReader(_stream, _encoding, detectEncodingFromByteOrderMarks: true, bufferSize: _bufferSize, leaveOpen: true);
 
         foreach (var item in CsvParser<T>.Instance.ParseStream(reader, skipInvalid, onError))
+            yield return item;
+    }
+    
+    public async IAsyncEnumerable<T> ReadAsStreamAsync(bool skipInvalid = true, Action<string>? onError = null, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var reader = new StreamReader(_stream, _encoding, detectEncodingFromByteOrderMarks: true, bufferSize: _bufferSize, leaveOpen: true);
+
+        await foreach (var item in CsvParser<T>.Instance.ParseStreamAsync(reader, skipInvalid, onError).WithCancellation(ct))
             yield return item;
     }
 }

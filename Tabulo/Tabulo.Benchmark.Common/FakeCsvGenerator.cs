@@ -3,15 +3,16 @@
 namespace Tabulo.Benchmark;
 public class FakeCsvGenerator
 {
-    public string GenerateTempFile()
+    public string GenerateTempFile(int rows = 5000)
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"products_{Guid.NewGuid()}.csv");
         var random = new Random();
 
         using var writer = new StreamWriter(tempFile);
+        // Header
         writer.WriteLine("ProductId,ProductName,ProductPrice,InStockFlag,CreatedAt");
 
-        for (int i = 1; i <= 5000; i++)
+        for (int i = 1; i <= rows; i++)
         {
             var id = i;
             var name = $"Product {i}";

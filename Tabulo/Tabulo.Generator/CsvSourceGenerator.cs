@@ -192,6 +192,56 @@ namespace {namespaceName}
                 }
             }
         }");
+    
+    sb.AppendLine($@"
+        public async IAsyncEnumerable<{className}> ParseStreamAsync(
+            TextReader reader,
+            bool skipInvalid = true,
+            Action<string>? onError = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+        {{
+            var header = await reader.ReadLineAsync().ConfigureAwait(false);
+            if (header == null) yield break;
+
+            var span = header.AsSpan();
+            // Substitui stackalloc por array do heap
+            var rangesArray = new Range[{props.Count + 4}];
+            Span<Range> ranges = rangesArray;
+            int count = Split(span, ranges);
+");
+
+    foreach (var p in props)
+    {
+        sb.AppendLine($@"
+            for (int i = 0; i < count; i++)
+            {{
+                var col = span[ranges[i]].Trim(); // Span<char> válido
+                if (col.SequenceEqual(""{p.ColumnName}"".AsSpan()))
+                    _idx_{p.Name} = i;
+            }}");
+    }
+
+    sb.AppendLine(@"
+            string? line;
+            while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var lineSpan = line.AsSpan();
+                if (TryParseLine(lineSpan, out var item))
+                {
+                    yield return item;
+                }
+                else
+                {
+                    if (onError != null)
+                        onError(line);
+
+                    if (!skipInvalid)
+                        throw new FormatException($""Invalid CSV line: '{line}'"");
+                }
+            }
+        }");
 
     sb.AppendLine(@"
         private static int Split(ReadOnlySpan<char> line, Span<Range> ranges)

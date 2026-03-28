@@ -1,6 +1,4 @@
-﻿
-
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
@@ -10,13 +8,16 @@ namespace Tabulo.Benchmark;
 [MemoryDiagnoser]
 public class CsvHelperBenchmark
 {
+    [Params(50_000, 100_000)] 
+    public int RowCount { get; set; }
+
     private string csvFile;
 
     [GlobalSetup]
     public void Setup()
     {
         var generator = new FakeCsvGenerator();
-        csvFile = generator.GenerateTempFile();
+        csvFile = generator.GenerateTempFile(RowCount);
     }
 
     [GlobalCleanup]
