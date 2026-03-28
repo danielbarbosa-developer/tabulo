@@ -204,7 +204,6 @@ namespace {namespaceName}
             if (header == null) yield break;
 
             var span = header.AsSpan();
-            // Substitui stackalloc por array do heap
             var rangesArray = new Range[{props.Count + 4}];
             Span<Range> ranges = rangesArray;
             int count = Split(span, ranges);
@@ -215,7 +214,7 @@ namespace {namespaceName}
         sb.AppendLine($@"
             for (int i = 0; i < count; i++)
             {{
-                var col = span[ranges[i]].Trim(); // Span<char> válido
+                var col = span[ranges[i]].Trim();
                 if (col.SequenceEqual(""{p.ColumnName}"".AsSpan()))
                     _idx_{p.Name} = i;
             }}");
