@@ -1,39 +1,65 @@
-# Tabulo
+<p align="center">
+  <img src="./assets/tabulo-icon.png" width="200" />
+</p>
 
-**High Performance CSV parser for .NET**
+<h1 align="center">Tabulo</h1>
 
-Tabulo is an ultra-fast CSV parser for .NET, designed for **processing large volumes of data** with minimal memory allocation and without using reflection. It's perfect for high-performance scenarios, bulk CSV processing, ETL tasks, and microservices that require extremely fast CSV parsing.
+<p align="center">
+  Fast, friendly, ands efficient CSV parsing for .NET
+</p>
 
-> ⚠️ **Status:** Beta. The project is under active development. Some features are still incomplete, and improvements are planned.
-
----
-
-## Features
-
-- Automatically generated parser from `[CsvRecord]` and `[CsvColumn]` attributes on DTOs  
-- Supports types: `int`, `long`, `decimal`, `double`, `bool`, `DateTime`, `string`  
-- Zero reflection when parsing lines  
-- Direct processing from `ReadOnlySpan<char>` for maximum performance  
-- Handles large CSVs without unnecessary memory overhead  
+<p align="center">
+  <strong>Process large datasets without the pain.</strong>
+</p>
 
 ---
 
-## Benchmark
+## ✨ What is Tabulo?
 
-Benchmark using **5,000 CSV lines** comparing Tabulo with **CsvHelper**:
+Tabulo is a **high-performance CSV parser for .NET** built for developers who care about speed, memory, and clean APIs.
+
+It uses **source generators** to create optimized parsers at compile time — meaning:
+- no reflection
+- minimal allocations
+- maximum performance
+
+Whether you're building ETL pipelines, microservices, or processing massive CSV files…  
+**Tabulo is designed to stay fast and out of your way.**
+
+---
+
+> ⚠️ **Status: Beta**
+>
+> Tabulo is under active development. Things may change, improve, or break (hopefully not 😄).
+
+---
+
+## ⚡ Why Tabulo?
+
+- 🚀 **Blazing fast** — built for performance-critical workloads  
+- 🧠 **Zero reflection** — everything generated at compile time  
+- 📦 **Low memory usage** — stream data without loading everything  
+- 🧩 **Simple model mapping** using attributes  
+- 🔍 **Span-based parsing** for maximum efficiency  
+
+---
+
+## 📊 Benchmark
+
+Parsing **5,000 CSV rows** compared to CsvHelper:
 
 | Method                | Mean       | Allocated Memory |
-|---------------------- |-----------:|----------------:|
-| ParseWithTabulo | 576.7 µs   | 1.34 MB         |
-| ParseWithCsvHelper    | 3.767 ms   | 2.17 MB         |
+|----------------------|-----------:|----------------:|
+| ParseWithTabulo      | 576.7 µs   | 1.34 MB         |
+| ParseWithCsvHelper   | 3.767 ms   | 2.17 MB         |
 
-> Tabulo is **~6x faster than CsvHelper** in this benchmark scenario, with lower memory usage.
+👉 **~6x faster than CsvHelper**, with less memory usage.
 
 ---
 
-## Usage
+## 🚀 Quick Start
 
-1. Install the library via NuGet (coming soon):
+Install via NuGet *(coming soon)*:
 
 ```bash
 dotnet add package Tabulo
