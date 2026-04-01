@@ -5,11 +5,18 @@
 <h1 align="center">Tabulo</h1>
 
 <p align="center">
-  Fast, friendly, ands efficient CSV parsing for .NET
+  Fast, friendly, and efficient CSV parsing for .NET
 </p>
 
 <p align="center">
   <strong>Process large datasets without the pain.</strong>
+</p>
+
+<p align="center">
+  <!-- Status badges -->
+  <a href="https://github.com/danielbarbosa-developer/Tabulo/actions/workflows/dotnet.yml">
+    <img src="https://github.com/danielbarbosa-developer/Tabulo/actions/workflows/dotnet.yml/badge.svg?branch=main" alt="Build & Test Status"/>
+  </a>
 </p>
 
 ---
