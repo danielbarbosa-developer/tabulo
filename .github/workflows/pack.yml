@@ -1,0 +1,24 @@
+name: Pack NuGet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore Tabulo/Tabulo.sln
+      - name: Build
+        run: dotnet build Tabulo/Tabulo.sln --no-restore --configuration Release
+      - name: Pack Tabulo
+        run: dotnet pack Tabulo/Tabulo/Tabulo.csproj --configuration Release --output ./nupkgs
+      - name: Pack Tabulo.Generator
+        run: dotnet pack Tabulo/Tabulo.Generator/Tabulo.Generator.csproj --configuration Release --output ./nupkgs
+      - name: List generated packages
+        run: ls -la ./nupkgs
