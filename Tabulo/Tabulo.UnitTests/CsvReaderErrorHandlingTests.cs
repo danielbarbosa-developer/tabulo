@@ -1,6 +1,6 @@
 ﻿namespace Tabulo.UnitTests;
 
-public class CsvReaderErrorHandlingShould
+public class CsvReaderErrorHandlingTests
 {
     private string InvalidCsv =>
         @"id,name,price

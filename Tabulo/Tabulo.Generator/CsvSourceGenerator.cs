@@ -33,12 +33,22 @@ public class CsvSourceGenerator : IIncrementalGenerator
 
             if (symbol == null)
                 continue;
+            
+            var attrData = symbol.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.Name == "CsvRecordAttribute");
 
-            var hasAttribute = symbol.GetAttributes()
-                .Any(a => a.AttributeClass?.Name == "CsvRecordAttribute");
-
-            if (!hasAttribute)
+            if (attrData == null)
                 continue;
+
+            char delimiter = ',';
+
+            foreach (var arg in attrData.NamedArguments)
+            {
+                if (arg.Key == "Delimiter" && arg.Value.Value is char c)
+                {
+                    delimiter = c;
+                }
+            }
 
             var className = symbol.Name;
             var namespaceName = symbol.ContainingNamespace.ToDisplayString();
@@ -53,7 +63,7 @@ public class CsvSourceGenerator : IIncrementalGenerator
                 })
                 .ToList();
 
-            var source = GenerateParser(namespaceName, className, properties);
+            var source = GenerateParser(namespaceName, className, delimiter, properties);
 
             context.AddSource($"{className}CsvParser.g.cs", source);
         }
@@ -70,7 +80,7 @@ public class CsvSourceGenerator : IIncrementalGenerator
         return property.Name;
     }
 
-   private static string GenerateParser(string namespaceName, string className, List<CsvProperty> props)
+   private static string GenerateParser(string namespaceName, string className, char delimiter, List<CsvProperty> props)
 {
     var sb = new StringBuilder();
     
@@ -242,24 +252,24 @@ namespace {namespaceName}
             }
         }");
 
-    sb.AppendLine(@"
+    sb.AppendLine($@"
         private static int Split(ReadOnlySpan<char> line, Span<Range> ranges)
-        {
+        {{
             int count = 0;
             int start = 0;
 
             for (int i = 0; i < line.Length; i++)
-            {
-                if (line[i] == ',')
-                {
+            {{
+                if (line[i] == '{delimiter}')
+                {{
                     ranges[count++] = start..i;
                     start = i + 1;
-                }
-            }
+                }}
+            }}
 
             ranges[count++] = start..line.Length;
             return count;
-        }");
+        }}");
 
     sb.AppendLine(IntParser.GenerateParserCode());
     sb.AppendLine(LongParser.GenerateParserCode());

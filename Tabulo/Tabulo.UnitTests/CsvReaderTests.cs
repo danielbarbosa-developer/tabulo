@@ -3,7 +3,7 @@ using AwesomeAssertions;
 
 namespace Tabulo.UnitTests;
 
-public class CsvReaderShould
+public class CsvReaderTests
 {
     private string SampleCsv => 
         @"id,name,price
