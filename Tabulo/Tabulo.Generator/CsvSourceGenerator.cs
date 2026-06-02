@@ -61,11 +61,27 @@ public class CsvSourceGenerator : IIncrementalGenerator
 
             var properties = symbol.GetMembers()
                 .OfType<IPropertySymbol>()
-                .Select(p => new CsvProperty
+                .Select(p =>
                 {
-                    Name = p.Name,
-                    Type = p.Type.ToDisplayString(),
-                    ColumnName = GetColumnName(p)
+                    var nullableType = p.Type as INamedTypeSymbol;
+
+                    bool isNullable =
+                        nullableType?.ConstructedFrom?.ToDisplayString() ==
+                        "System.Nullable<T>";
+
+                    string underlyingType =
+                        isNullable
+                            ? nullableType!.TypeArguments[0].ToDisplayString()
+                            : p.Type.ToDisplayString();
+
+                    return new CsvProperty
+                    {
+                        Name = p.Name,
+                        Type = p.Type.ToDisplayString(),
+                        ColumnName = GetColumnName(p),
+                        IsNullable = isNullable,
+                        UnderlyingType = underlyingType
+                    };
                 })
                 .ToList();
 
@@ -132,53 +148,23 @@ namespace {namespaceName}
             result = new {className}();
 
 ");
+        
+        foreach (var p in props)
+        {
+            sb.AppendLine($@"
+            if (_idx_{p.Name} < 0 || _idx_{p.Name} >= count)
+                return false;
+");
+        }
 
         foreach (var p in props)
         {
             string spanAccess =
                 $"UnwrapQuoted(line[ranges[_idx_{p.Name}]])";
 
-            string code = p.Type switch
-            {
-                "int" => $@"
-            if (!TryParseInt({spanAccess}, out var __{p.Name}))
-                return false;
-
-            result.{p.Name} = __{p.Name};",
-
-                "long" => $@"
-            if (!TryParseLong({spanAccess}, out var __{p.Name}))
-                return false;
-
-            result.{p.Name} = __{p.Name};",
-
-                "decimal" => $@"
-            if (!TryParseDecimal({spanAccess}, out var __{p.Name}))
-                return false;
-
-            result.{p.Name} = __{p.Name};",
-
-                "double" => $@"
-            if (!TryParseDouble({spanAccess}, out var __{p.Name}))
-                return false;
-
-            result.{p.Name} = __{p.Name};",
-
-                "DateTime" or "System.DateTime" => $@"
-            if (!TryParseDateTime({spanAccess}, out var __{p.Name}))
-                return false;
-
-            result.{p.Name} = __{p.Name};",
-
-                "bool" => $@"
-            if (!TryParseBool({spanAccess}, out var __{p.Name}))
-                return false;
-
-            result.{p.Name} = __{p.Name};",
-
-                _ => $@"
-            result.{p.Name} = {spanAccess}.ToString();"
-            };
+            string code = GeneratePropertyParser(
+                p,
+                spanAccess);
 
             sb.AppendLine(code);
         }
@@ -334,6 +320,14 @@ namespace {namespaceName}
             return value;
         }}
 ");
+        
+        sb.AppendLine(@"
+
+        private static bool IsEmpty(ReadOnlySpan<char> value)
+        {
+            return value.Trim().IsEmpty;
+        }
+");
 
         sb.AppendLine($@"
 
@@ -388,5 +382,97 @@ namespace {namespaceName}
 }");
 
         return sb.ToString();
+    }
+    
+    private static string GeneratePropertyParser(
+        CsvProperty p,
+        string spanAccess)
+    {
+        if (p.IsNullable)
+        {
+            return GenerateNullableParser(
+                p,
+                spanAccess);
+        }
+
+        return p.UnderlyingType switch
+        {
+            "int" => $@"
+            if (!TryParseInt({spanAccess}, out var __{p.Name}))
+                return false;
+
+            result.{p.Name} = __{p.Name};",
+
+            "long" => $@"
+            if (!TryParseLong({spanAccess}, out var __{p.Name}))
+                return false;
+
+            result.{p.Name} = __{p.Name};",
+
+            "decimal" => $@"
+            if (!TryParseDecimal({spanAccess}, out var __{p.Name}))
+                return false;
+
+            result.{p.Name} = __{p.Name};",
+
+            "double" => $@"
+            if (!TryParseDouble({spanAccess}, out var __{p.Name}))
+                return false;
+
+            result.{p.Name} = __{p.Name};",
+
+            "bool" => $@"
+            if (!TryParseBool({spanAccess}, out var __{p.Name}))
+                return false;
+
+            result.{p.Name} = __{p.Name};",
+
+            "DateTime" or "System.DateTime" => $@"
+            if (!TryParseDateTime({spanAccess}, out var __{p.Name}))
+                return false;
+
+            result.{p.Name} = __{p.Name};",
+
+            _ => $@"
+            result.{p.Name} = {spanAccess}.ToString();"
+        };
+    }
+    
+    private static string GenerateNullableParser(
+        CsvProperty p,
+        string spanAccess)
+    {
+        string parserMethod = p.UnderlyingType switch
+        {
+            "int" => "TryParseInt",
+            "long" => "TryParseLong",
+            "decimal" => "TryParseDecimal",
+            "double" => "TryParseDouble",
+            "bool" => "TryParseBool",
+            "DateTime" or "System.DateTime" => "TryParseDateTime",
+            _ => string.Empty
+        };
+
+        if (string.IsNullOrWhiteSpace(parserMethod))
+        {
+            return $@"
+            result.{p.Name} =
+                IsEmpty({spanAccess})
+                    ? null
+                    : {spanAccess}.ToString();";
+        }
+
+        return $@"
+            if (IsEmpty({spanAccess}))
+            {{
+                result.{p.Name} = null;
+            }}
+            else
+            {{
+                if (!{parserMethod}({spanAccess}, out var __{p.Name}))
+                    return false;
+
+                result.{p.Name} = __{p.Name};
+            }}";
     }
 }

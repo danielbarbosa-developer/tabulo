@@ -5,4 +5,6 @@ internal class CsvProperty
     public required string Name { get; set; }
     public required string Type { get; set; }
     public required string ColumnName { get; set; }
+    public bool IsNullable { get; set; }
+    public string UnderlyingType { get; set; } = "";
 }
